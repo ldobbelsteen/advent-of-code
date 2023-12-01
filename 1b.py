@@ -24,7 +24,6 @@ with open("1.txt", "r") as file:
 
     for line in file:
         line = line.rstrip()
-        line_rev = line[::-1]
 
         first_digit_occ_index = None
         first_digit_occ_value = None
@@ -33,28 +32,21 @@ with open("1.txt", "r") as file:
         last_digit_occ_value = None
 
         for word, value in words.items():
-            try:
-                first_word_occ_index = line.index(word)
-                if (
-                    first_digit_occ_index is None
-                    or first_word_occ_index < first_digit_occ_index
-                ):
-                    first_digit_occ_index = first_word_occ_index
-                    first_digit_occ_value = value
-            except ValueError:
-                pass
+            first_word_occ_index = line.find(word)
+            if first_word_occ_index >= 0 and (
+                first_digit_occ_index is None
+                or first_word_occ_index < first_digit_occ_index
+            ):
+                first_digit_occ_index = first_word_occ_index
+                first_digit_occ_value = value
 
-            try:
-                word_rev = word[::-1]
-                last_word_occ_index = line_rev.index(word_rev)
-                if (
-                    last_digit_occ_index is None
-                    or last_word_occ_index < last_digit_occ_index
-                ):
-                    last_digit_occ_index = last_word_occ_index
-                    last_digit_occ_value = value
-            except ValueError:
-                pass
+            last_word_occ_index = line.rfind(word)
+            if last_word_occ_index >= 0 and (
+                last_digit_occ_index is None
+                or last_word_occ_index > last_digit_occ_index
+            ):
+                last_digit_occ_index = last_word_occ_index
+                last_digit_occ_value = value
 
         result += int(str(first_digit_occ_value) + str(last_digit_occ_value))
 
