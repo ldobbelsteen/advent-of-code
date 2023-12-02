@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  }
+}

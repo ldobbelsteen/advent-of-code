@@ -1,4 +1,4 @@
-with open("1.txt", "r") as file:
+with open("input.txt", "r") as file:
     result = 0
     for line in file:
         line = line.rstrip()

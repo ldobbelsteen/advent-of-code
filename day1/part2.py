@@ -1,4 +1,4 @@
-with open("1.txt", "r") as file:
+with open("input.txt", "r") as file:
     words = {
         "1": 1,
         "2": 2,
