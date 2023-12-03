@@ -15,5 +15,5 @@ cargo run --release --bin part1|part2
 ## TypeScript
 
 ```
-deno run part1.ts|part2.ts
+deno run --allow-read part1.ts|part2.ts
 ```
