@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use regex::Regex;
+use std::cmp;
 use std::collections::HashMap;
 use std::fs;
 use std::ops::Range;
@@ -50,7 +51,7 @@ impl FromStr for Almanac {
 
 impl Almanac {
     /// Get the lowest location a range in a category can map to.
-    pub fn lowest_location(&self, current_category: &str, mut range: Range<i64>) -> Result<i64> {
+    pub fn lowest_location(&self, current_category: &str, range: &Range<i64>) -> Result<i64> {
         if current_category == "location" {
             return Ok(range.start);
         }
@@ -60,16 +61,23 @@ impl Almanac {
             .get(current_category)
             .ok_or(anyhow!("category does not exist: {}", current_category))?;
 
-        // Break down the range into subranges which overlap with ranges in the mappings.
-        let mut best_location = None;
-        while range.start < range.end {
-            let range = map.next_subrange(&mut range)?;
-            let lowest = self.lowest_location(&map.destination_category, range)?;
-            if best_location.map_or(true, |b| lowest < b) {
-                best_location = Some(lowest);
+        // Break down the range into subranges and take the lowest mapped location.
+        fn lowest_location_rec(
+            almanac: &Almanac,
+            map: &AlmanacMap,
+            range: &Range<i64>,
+        ) -> Result<i64> {
+            let (mapped_head, tail) = map.map_head(range);
+            let head_lowest = almanac.lowest_location(&map.destination_category, &mapped_head)?;
+            if let Some(tail) = tail {
+                let tail_lowest = lowest_location_rec(almanac, map, &tail)?;
+                Ok(cmp::min(head_lowest, tail_lowest))
+            } else {
+                Ok(head_lowest)
             }
         }
-        Ok(best_location.unwrap())
+
+        lowest_location_rec(self, map, &range)
     }
 }
 
@@ -111,7 +119,10 @@ impl FromStr for AlmanacMap {
 }
 
 impl AlmanacMap {
-    fn next_subrange(&self, range: &mut Range<i64>) -> Result<Range<i64>> {
+    /// Map as large of a piece of the head of a range as possible to the next category.
+    /// The mapped head and the unmapped tail (if non-empty) are returned respectively.
+    /// The input range is assumed to be non-empty (range.end - range.start > 0).
+    fn map_head(&self, range: &Range<i64>) -> (Range<i64>, Option<Range<i64>>) {
         let i = self
             .ranges
             .partition_point(|r| r.source_range.start <= range.start);
@@ -119,35 +130,34 @@ impl AlmanacMap {
             // range start lies before mapping ranges
             if range.end <= self.ranges[0].source_range.start {
                 // range has no overlap with mapping ranges, so identical mapping of entire range
-                let result = range.start..range.end;
-                range.start = range.end;
-                Ok(result)
+                (range.start..range.end, None)
             } else {
                 // range start has no overlap, but range tail has overlap with mapping ranges
-                let result = range.start..self.ranges[0].source_range.start;
-                range.start = self.ranges[0].source_range.start;
-                Ok(result)
+                (
+                    range.start..self.ranges[0].source_range.start,
+                    Some(self.ranges[0].source_range.start..range.end),
+                )
             }
         } else {
             // range start falls in, between or after mapping ranges
             let first_range = &self.ranges[i - 1];
             if range.end <= first_range.source_range.end {
                 // range falls entirely within a mapping range
-                let result = range.start + first_range.destination_offset
-                    ..range.end + first_range.destination_offset;
-                range.start = range.end;
-                Ok(result)
+                (
+                    range.start + first_range.destination_offset
+                        ..range.end + first_range.destination_offset,
+                    None,
+                )
             } else if range.start < first_range.source_range.end {
                 // range start falls in mapping range, tail falls outside
-                let result = range.start + first_range.destination_offset
-                    ..first_range.source_range.end + first_range.destination_offset;
-                range.start = first_range.source_range.end;
-                Ok(result)
+                (
+                    range.start + first_range.destination_offset
+                        ..first_range.source_range.end + first_range.destination_offset,
+                    Some(first_range.source_range.end..range.end),
+                )
             } else {
                 // range lies entirely after mapping ranges, so identical mapping of entire range
-                let result = range.start..range.end;
-                range.start = range.end;
-                Ok(result)
+                (range.start..range.end, None)
             }
         }
     }
@@ -187,7 +197,7 @@ fn main() -> Result<()> {
     let best_locations = almanac
         .seed_ranges
         .iter()
-        .map(|r| almanac.lowest_location("seed", r.clone()))
+        .map(|r| almanac.lowest_location("seed", r))
         .collect::<Result<Vec<i64>>>()?;
 
     let result = best_locations.iter().min();
