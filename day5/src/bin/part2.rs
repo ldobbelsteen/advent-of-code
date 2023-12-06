@@ -9,7 +9,7 @@ use std::str::FromStr;
 #[derive(Debug)]
 struct Almanac {
     seed_ranges: Vec<Range<i64>>,
-    maps: HashMap<String, AlmanacMap>,
+    category_maps: HashMap<String, AlmanacMap>,
 }
 
 impl FromStr for Almanac {
@@ -26,50 +26,47 @@ impl FromStr for Almanac {
             .unwrap()
             .as_str()
             .split_whitespace()
-            .map(|s| -> Result<i64> {
-                let n = s.parse()?;
-                Ok(n)
-            })
+            .map(|s| s.parse())
             .tuples()
-            .map(|(start, len)| {
-                let start = start?;
-                let len = len?;
-                Ok(start..start + len)
-            })
+            .map(|(start, len)| Ok((start?, len?)))
+            .map(|r| r.and_then(|(start, len)| Ok(start..start + len)))
             .collect::<Result<Vec<Range<i64>>>>()?;
 
-        let maps = caps
+        let category_maps = caps
             .get(2)
             .unwrap()
             .as_str()
             .split("\n\n")
-            .map(|s| -> Result<(String, AlmanacMap)> {
-                let map = AlmanacMap::from_str(s)?;
-                Ok((map.src_category.clone(), map))
-            })
+            .map(AlmanacMap::from_str)
+            .map(|m| m.and_then(|m| Ok((m.source_category.clone(), m))))
             .collect::<Result<HashMap<String, AlmanacMap>>>()?;
 
-        Ok(Self { seed_ranges, maps })
+        Ok(Self {
+            seed_ranges,
+            category_maps,
+        })
     }
 }
 
 impl Almanac {
-    pub fn get_best_location(&self, category: &str, mut src_range: Range<i64>) -> Result<i64> {
-        if category == "location" {
-            return Ok(src_range.start);
+    /// Get the lowest location a range in a category can map to.
+    pub fn lowest_location(&self, current_category: &str, mut range: Range<i64>) -> Result<i64> {
+        if current_category == "location" {
+            return Ok(range.start);
         }
 
         let map = self
-            .maps
-            .get(category)
-            .ok_or(anyhow!("category does not exist: {}", category))?;
+            .category_maps
+            .get(current_category)
+            .ok_or(anyhow!("category does not exist: {}", current_category))?;
 
+        // Break down the range into subranges which overlap with ranges in the mappings.
         let mut best_location = None;
-        while src_range.start < src_range.end {
-            let range = map.next_dst_range(&mut src_range)?;
-            let range_best = self.get_best_location(&map.dst_category, range)?;
-            if best_location.map_or(true, |b| range_best < b) {
-                best_location = Some(range_best);
+        while range.start < range.end {
+            let range = map.next_subrange(&mut range)?;
+            let lowest = self.lowest_location(&map.destination_category, range)?;
+            if best_location.map_or(true, |b| lowest < b) {
+                best_location = Some(lowest);
             }
         }
         Ok(best_location.unwrap())
@@ -78,8 +75,8 @@ impl Almanac {
 
 #[derive(Debug)]
 struct AlmanacMap {
-    src_category: String,
-    dst_category: String,
+    source_category: String,
+    destination_category: String,
     ranges: Vec<AlmanacRange>,
 }
 
@@ -89,62 +86,67 @@ impl FromStr for AlmanacMap {
     fn from_str(s: &str) -> Result<Self> {
         let mut lines = s.lines();
 
-        let header = lines.next().ok_or(anyhow!("empty map: {}", s))?;
+        let header = lines.next().ok_or(anyhow!("map is empty: {}", s))?;
         let header_re = Regex::new(r"(.+)-to-(.+) map:")?;
         let header_caps = header_re
             .captures(header)
             .ok_or(anyhow!("invalid map header: {}", header))?;
 
-        let src_category = header_caps.get(1).unwrap().as_str().to_owned();
-        let dst_category = header_caps.get(2).unwrap().as_str().to_owned();
+        let source_category = header_caps.get(1).unwrap().as_str().to_owned();
+        let destination_category = header_caps.get(2).unwrap().as_str().to_owned();
         let mut ranges = lines
             .map(AlmanacRange::from_str)
             .collect::<Result<Vec<AlmanacRange>>>()?;
-        ranges.sort_by_key(|r| r.src_range.start);
+
+        // Sort the map ranges by the start of the source range,
+        // so we can use binary search to find ranges faster.
+        ranges.sort_by_key(|r| r.source_range.start);
 
         Ok(Self {
-            src_category,
-            dst_category,
+            source_category,
+            destination_category,
             ranges,
         })
     }
 }
 
 impl AlmanacMap {
-    fn next_dst_range(&self, src_range: &mut Range<i64>) -> Result<Range<i64>> {
+    fn next_subrange(&self, range: &mut Range<i64>) -> Result<Range<i64>> {
         let i = self
             .ranges
-            .partition_point(|r| r.src_range.start <= src_range.start);
+            .partition_point(|r| r.source_range.start <= range.start);
         if i == 0 {
-            if src_range.end <= self.ranges[0].src_range.start {
-                // range has no overlap with any other range, so identical mapping
-                let result = src_range.start..src_range.end;
-                src_range.start = src_range.end;
+            // range start lies before mapping ranges
+            if range.end <= self.ranges[0].source_range.start {
+                // range has no overlap with mapping ranges, so identical mapping of entire range
+                let result = range.start..range.end;
+                range.start = range.end;
                 Ok(result)
             } else {
-                // range tail has overlap with (at least) the first range
-                let result = src_range.start..self.ranges[0].src_range.start;
-                src_range.start = self.ranges[0].src_range.start;
+                // range start has no overlap, but range tail has overlap with mapping ranges
+                let result = range.start..self.ranges[0].source_range.start;
+                range.start = self.ranges[0].source_range.start;
                 Ok(result)
             }
         } else {
-            // range start falls in, between or after ranges
-            let range = &self.ranges[i - 1];
-            if src_range.end <= range.src_range.end {
-                // range falls entirely within range
-                let result = src_range.start + range.dst_offset..src_range.end + range.dst_offset;
-                src_range.start = src_range.end;
+            // range start falls in, between or after mapping ranges
+            let first_range = &self.ranges[i - 1];
+            if range.end <= first_range.source_range.end {
+                // range falls entirely within a mapping range
+                let result = range.start + first_range.destination_offset
+                    ..range.end + first_range.destination_offset;
+                range.start = range.end;
                 Ok(result)
-            } else if src_range.start < range.src_range.end {
-                // range start falls in range, tail falls outside
-                let result =
-                    src_range.start + range.dst_offset..range.src_range.end + range.dst_offset;
-                src_range.start = range.src_range.end;
+            } else if range.start < first_range.source_range.end {
+                // range start falls in mapping range, tail falls outside
+                let result = range.start + first_range.destination_offset
+                    ..first_range.source_range.end + first_range.destination_offset;
+                range.start = first_range.source_range.end;
                 Ok(result)
             } else {
-                // range comes entirely after ranges
-                let result = src_range.start..src_range.end;
-                src_range.start = src_range.end;
+                // range lies entirely after mapping ranges, so identical mapping of entire range
+                let result = range.start..range.end;
+                range.start = range.end;
                 Ok(result)
             }
         }
@@ -153,8 +155,8 @@ impl AlmanacMap {
 
 #[derive(Debug)]
 struct AlmanacRange {
-    src_range: Range<i64>,
-    dst_offset: i64,
+    source_range: Range<i64>,
+    destination_offset: i64,
 }
 
 impl FromStr for AlmanacRange {
@@ -164,16 +166,16 @@ impl FromStr for AlmanacRange {
         let re = Regex::new(r"(\d+) (\d+) (\d+)")?;
         let caps = re.captures(s).ok_or(anyhow!("invalid range: {}", s))?;
 
-        let dst_start = caps.get(1).unwrap().as_str().parse::<i64>()?;
-        let src_start = caps.get(2).unwrap().as_str().parse::<i64>()?;
-        let len = caps.get(3).unwrap().as_str().parse::<i64>()?;
+        let destination_start = caps.get(1).unwrap().as_str().parse::<i64>()?;
+        let source_start = caps.get(2).unwrap().as_str().parse::<i64>()?;
+        let range_len = caps.get(3).unwrap().as_str().parse::<i64>()?;
 
-        let src_range = src_start..src_start + len;
-        let dst_offset = dst_start - src_start;
+        let source_range = source_start..source_start + range_len;
+        let destination_offset = destination_start - source_start;
 
         Ok(Self {
-            src_range,
-            dst_offset,
+            source_range,
+            destination_offset,
         })
     }
 }
@@ -185,11 +187,11 @@ fn main() -> Result<()> {
     let best_locations = almanac
         .seed_ranges
         .iter()
-        .map(|r| almanac.get_best_location("seed", r.clone()))
+        .map(|r| almanac.lowest_location("seed", r.clone()))
         .collect::<Result<Vec<i64>>>()?;
 
     let result = best_locations.iter().min();
-    println!("{:?}", result);
+    println!("{:?}", result.unwrap());
 
     Ok(())
 }
