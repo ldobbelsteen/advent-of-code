@@ -30,7 +30,7 @@ impl FromStr for Almanac {
             .map(|s| s.parse())
             .tuples()
             .map(|(start, len)| Ok((start?, len?)))
-            .map(|r| r.and_then(|(start, len)| Ok(start..start + len)))
+            .map(|r| r.map(|(start, len)| start..start + len))
             .collect::<Result<Vec<Range<i64>>>>()?;
 
         let category_maps = caps
@@ -39,7 +39,7 @@ impl FromStr for Almanac {
             .as_str()
             .split("\n\n")
             .map(AlmanacMap::from_str)
-            .map(|m| m.and_then(|m| Ok((m.source_category.clone(), m))))
+            .map(|m| m.map(|m| (m.source_category.clone(), m)))
             .collect::<Result<HashMap<String, AlmanacMap>>>()?;
 
         Ok(Self {
@@ -77,7 +77,7 @@ impl Almanac {
             }
         }
 
-        lowest_location_rec(self, map, &range)
+        lowest_location_rec(self, map, range)
     }
 }
 

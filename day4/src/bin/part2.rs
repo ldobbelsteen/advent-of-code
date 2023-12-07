@@ -68,10 +68,9 @@ fn main() -> Result<()> {
     }
 
     for (i, card) in cards.iter().enumerate() {
-        let count = copies
+        let count = *copies
             .get(&i)
-            .ok_or(anyhow!("card not in map while iterating: {}", i))?
-            .clone();
+            .ok_or(anyhow!("card not in map while iterating: {}", i))?;
         for j in i + 1..i + 1 + card.matchings() {
             let existing = copies
                 .get(&j)
