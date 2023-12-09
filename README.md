@@ -1,4 +1,4 @@
-My solutions to Advent of Code 2023 in various programming languages.
+My solutions to Advent of Code in various programming languages.
 
 ## Python
 
@@ -16,4 +16,10 @@ cargo run --release --bin part1|part2
 
 ```
 deno run --allow-read part1.ts|part2.ts
+```
+
+## Golang
+
+```
+go run part1|part2
 ```

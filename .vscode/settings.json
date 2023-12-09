@@ -9,6 +9,8 @@
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
-  "deno.enable": true,
-  "rust-analyzer.check.command": "clippy"
+  "[go]": {
+    "editor.defaultFormatter": "golang.go"
+  },
+  "rust-analyzer.check.command": "clippy",
 }
