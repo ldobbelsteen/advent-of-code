@@ -23,8 +23,8 @@ fn main() -> Result<()> {
                     Ok(v)
                 })
                 .collect::<Result<Vec<_>>>()
+                .and_then(extrapolate_history_backwards)
         })
-        .map(|vh| vh.and_then(extrapolate_history_backwards))
         .sum::<Result<i64>>()?;
     println!("{}", result);
     Ok(())
