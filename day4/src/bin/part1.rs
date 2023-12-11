@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::collections::HashSet;
@@ -42,7 +44,7 @@ impl FromStr for Card {
             })
             .collect::<Result<HashSet<u32>>>()?;
 
-        Ok(Card { winning, numbers })
+        Ok(Card { numbers, winning })
     }
 }
 
@@ -74,6 +76,6 @@ fn main() -> Result<()> {
         })
         .sum::<Result<u32>>()?;
 
-    println!("{}", result);
+    println!("{result}");
     Ok(())
 }

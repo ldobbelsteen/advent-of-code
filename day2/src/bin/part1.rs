@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::fs;
@@ -108,6 +110,6 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("Result: {:?}", result);
+    println!("Result: {result}");
     Ok(())
 }

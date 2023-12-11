@@ -1,10 +1,12 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::Result;
 use std::{collections::HashSet, fs, str::FromStr};
 
 #[derive(Debug)]
 struct Coord {
-    x: i64,
-    y: i64,
+    x: usize,
+    y: usize,
 }
 
 #[derive(Debug)]
@@ -31,15 +33,15 @@ impl Space {
         }
 
         self.dimensions = Coord {
-            x: self.dimensions.x + (multiplier - 1) * empty_rows.len() as i64,
-            y: self.dimensions.y + (multiplier - 1) * empty_cols.len() as i64,
+            x: self.dimensions.x + (multiplier - 1) * empty_rows.len(),
+            y: self.dimensions.y + (multiplier - 1) * empty_cols.len(),
         };
 
-        for galaxy in self.galaxies.iter_mut() {
+        for galaxy in &mut self.galaxies {
             let y_expand =
-                (multiplier - 1) * empty_rows.iter().filter(|row| **row < galaxy.y).count() as i64;
+                empty_rows.iter().filter(|row| **row < galaxy.y).count() * (multiplier - 1);
             let x_expand =
-                (multiplier - 1) * empty_cols.iter().filter(|col| **col < galaxy.x).count() as i64;
+                empty_cols.iter().filter(|col| **col < galaxy.x).count() * (multiplier - 1);
             *galaxy = Coord {
                 x: galaxy.x + x_expand,
                 y: galaxy.y + y_expand,
@@ -56,25 +58,30 @@ impl FromStr for Space {
         s.lines().enumerate().for_each(|(y, line)| {
             line.chars().enumerate().for_each(|(x, c)| {
                 if c == '#' {
-                    galaxies.push(Coord {
-                        x: x as i64,
-                        y: y as i64,
-                    })
+                    galaxies.push(Coord { x, y });
                 }
-            })
+            });
         });
         Ok(Space {
-            galaxies,
             dimensions: Coord {
-                y: s.lines().count() as i64,
-                x: s.lines().next().unwrap().chars().count() as i64,
+                x: galaxies.iter().map(|g| g.x).max().unwrap_or(0),
+                y: galaxies.iter().map(|g| g.y).max().unwrap_or(0),
             },
+            galaxies,
         })
     }
 }
 
-fn manhattan_distance(point1: &Coord, point2: &Coord) -> i64 {
-    (point2.x - point1.x).abs() + (point2.y - point1.y).abs()
+fn manhattan_distance(point1: &Coord, point2: &Coord) -> usize {
+    (if point1.x > point2.x {
+        point1.x - point2.x
+    } else {
+        point2.x - point1.x
+    }) + (if point1.y > point2.y {
+        point1.y - point2.y
+    } else {
+        point2.y - point1.y
+    })
 }
 
 fn main() -> Result<()> {
@@ -89,6 +96,6 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("{:?}", result);
+    println!("{result}");
     Ok(())
 }

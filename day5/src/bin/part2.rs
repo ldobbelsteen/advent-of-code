@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use regex::Regex;
@@ -27,7 +29,7 @@ impl FromStr for Almanac {
             .unwrap()
             .as_str()
             .split_whitespace()
-            .map(|s| s.parse())
+            .map(str::parse)
             .tuples()
             .map(|(start, len)| Ok((start?, len?)))
             .map(|r| r.map(|(start, len)| start..start + len))
@@ -52,16 +54,7 @@ impl FromStr for Almanac {
 impl Almanac {
     /// Get the lowest location a range in a category can map to.
     pub fn lowest_location(&self, current_category: &str, range: &Range<i64>) -> Result<i64> {
-        if current_category == "location" {
-            return Ok(range.start);
-        }
-
-        let map = self
-            .category_maps
-            .get(current_category)
-            .ok_or(anyhow!("category does not exist: {}", current_category))?;
-
-        // Break down the range into subranges and take the lowest mapped location.
+        /// Break down the range into subranges and take the lowest mapped location.
         fn lowest_location_rec(
             almanac: &Almanac,
             map: &AlmanacMap,
@@ -76,6 +69,15 @@ impl Almanac {
                 Ok(head_lowest)
             }
         }
+
+        if current_category == "location" {
+            return Ok(range.start);
+        }
+
+        let map = self
+            .category_maps
+            .get(current_category)
+            .ok_or(anyhow!("category does not exist: {}", current_category))?;
 
         lowest_location_rec(self, map, range)
     }

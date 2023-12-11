@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::collections::HashMap;
@@ -16,11 +18,11 @@ impl FromStr for Almanac {
 
     fn from_str(s: &str) -> Result<Self> {
         let re = Regex::new(r"seeds: ([\d\s]+)\n\n((?:.|\n)+)")?;
-        let caps = re
+        let captures = re
             .captures(s)
             .ok_or(anyhow!("invalid almanac header: {}", s))?;
 
-        let seeds = caps
+        let seeds = captures
             .get(1)
             .unwrap()
             .as_str()
@@ -31,7 +33,7 @@ impl FromStr for Almanac {
             })
             .collect::<Result<Vec<i64>>>()?;
 
-        let maps = caps
+        let maps = captures
             .get(2)
             .unwrap()
             .as_str()
@@ -136,10 +138,10 @@ fn main() -> Result<()> {
         }
 
         if best_location.map_or(true, |best| number < best) {
-            best_location = Some(number)
+            best_location = Some(number);
         }
     }
 
-    println!("{:?}", best_location);
+    println!("{best_location:?}");
     Ok(())
 }

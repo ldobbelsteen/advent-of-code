@@ -1,7 +1,9 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::Result;
 use std::fs;
 
-fn extrapolate_history_backwards(values: Vec<i64>) -> Result<i64> {
+fn extrapolate_history_backwards(values: &Vec<i64>) -> Result<i64> {
     if values.iter().all(|v| *v == 0) {
         return Ok(0);
     }
@@ -9,7 +11,7 @@ fn extrapolate_history_backwards(values: Vec<i64>) -> Result<i64> {
     for i in 1..values.len() {
         child.push(values[i] - values[i - 1]);
     }
-    Ok(values.first().unwrap() - extrapolate_history_backwards(child)?)
+    Ok(values.first().unwrap() - extrapolate_history_backwards(&child)?)
 }
 
 fn main() -> Result<()> {
@@ -23,9 +25,9 @@ fn main() -> Result<()> {
                     Ok(v)
                 })
                 .collect::<Result<Vec<_>>>()
-                .and_then(extrapolate_history_backwards)
+                .and_then(|vs| extrapolate_history_backwards(&vs))
         })
         .sum::<Result<i64>>()?;
-    println!("{}", result);
+    println!("{result}");
     Ok(())
 }

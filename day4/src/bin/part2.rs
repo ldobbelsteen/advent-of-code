@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
@@ -42,7 +44,7 @@ impl FromStr for Card {
             })
             .collect::<Result<HashSet<u32>>>()?;
 
-        Ok(Card { winning, numbers })
+        Ok(Card { numbers, winning })
     }
 }
 
@@ -80,6 +82,6 @@ fn main() -> Result<()> {
     }
 
     let result = copies.values().sum::<u32>();
-    println!("{}", result);
+    println!("{result}");
     Ok(())
 }

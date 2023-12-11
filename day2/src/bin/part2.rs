@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::fs;
@@ -88,12 +90,12 @@ impl Game {
             }
             if let Some(g) = grab.green {
                 if g > max_green {
-                    max_green = g
+                    max_green = g;
                 }
             }
             if let Some(b) = grab.blue {
                 if b > max_blue {
-                    max_blue = b
+                    max_blue = b;
                 }
             }
         }
@@ -109,7 +111,7 @@ fn main() -> Result<()> {
         .map(Game::from_str)
         .collect::<Result<Vec<Game>>>()?;
 
-    let result: u32 = games.iter().map(|g| g.power()).sum();
-    println!("Result: {:?}", result);
+    let result: u32 = games.iter().map(Game::power).sum();
+    println!("Result: {result}");
     Ok(())
 }

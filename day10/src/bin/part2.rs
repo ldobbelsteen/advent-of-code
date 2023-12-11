@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use std::{collections::HashSet, fs, str::FromStr};
 
@@ -284,12 +286,12 @@ impl Grid {
     fn find_cycle(&self) -> Result<Vec<Coord>> {
         fn depth_first_search(
             grid: &Grid,
-            previous: Option<Coord>,
-            current: Coord,
+            previous: &Option<Coord>,
+            current: &Coord,
             path: &mut Vec<Coord>,
         ) -> bool {
             path.push(current.clone());
-            for next in grid.matching_adjacent(&current) {
+            for next in grid.matching_adjacent(current) {
                 if let Some(previous) = &previous {
                     if next == *previous {
                         continue; // circling back of not valid
@@ -298,7 +300,7 @@ impl Grid {
                 if next == grid.start {
                     return true; // we have come back to the start and are finished
                 }
-                if depth_first_search(grid, Some(current.clone()), next, path) {
+                if depth_first_search(grid, &Some(current.clone()), &next, path) {
                     return true; // if this branch succeeded down the line, we are finished
                 }
             }
@@ -307,7 +309,7 @@ impl Grid {
         }
 
         let mut result = Vec::new();
-        if depth_first_search(self, None, self.start.clone(), &mut result) {
+        if depth_first_search(self, &None, &self.start, &mut result) {
             Ok(result)
         } else {
             Err(anyhow!("no cycle could be found in grid: {:?}", self))
@@ -383,11 +385,10 @@ impl Grid {
                 }
             }
             fresh = next_fresh.clone();
-            if !next_fresh.is_empty() {
-                fill.extend(next_fresh);
-            } else {
+            if next_fresh.is_empty() {
                 break;
             }
+            fill.extend(next_fresh);
         }
     }
 
@@ -403,7 +404,7 @@ impl Grid {
             result[coord.y][coord.x] = 'I';
         }
         for row in result {
-            println!("{}", row.iter().collect::<String>())
+            println!("{}", row.iter().collect::<String>());
         }
     }
 }

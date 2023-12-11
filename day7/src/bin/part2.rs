@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::{anyhow, Result};
 use std::{char, collections::HashMap, fs, str::FromStr};
 
@@ -69,7 +71,7 @@ enum HandType {
 }
 
 impl HandType {
-    fn from_cards(cards: &[Card; 5]) -> Result<Self> {
+    fn from_cards(cards: &[Card; 5]) -> Self {
         let mut jokers = 0;
         let mut non_joker_occs: HashMap<Card, u32> = HashMap::new();
 
@@ -90,16 +92,16 @@ impl HandType {
             .unwrap_or((&Card::Joker, &0));
 
         match max_occs + jokers {
-            5 => Ok(Self::FiveOfAKind),
-            4 => Ok(Self::FourOfAKind),
+            5 => Self::FiveOfAKind,
+            4 => Self::FourOfAKind,
             3 => {
                 if non_joker_occs
                     .iter()
                     .any(|(card, occ)| card != max && *occ == 2)
                 {
-                    Ok(Self::FullHouse)
+                    Self::FullHouse
                 } else {
-                    Ok(Self::ThreeOfAKind)
+                    Self::ThreeOfAKind
                 }
             }
             2 => {
@@ -107,12 +109,12 @@ impl HandType {
                     .iter()
                     .any(|(card, occ)| card != max && *occ == 2)
                 {
-                    Ok(Self::TwoPair)
+                    Self::TwoPair
                 } else {
-                    Ok(Self::OnePair)
+                    Self::OnePair
                 }
             }
-            _ => Ok(Self::HighCard),
+            _ => Self::HighCard,
         }
     }
 
@@ -151,7 +153,7 @@ impl FromStr for Hand {
             .collect::<Result<Vec<Card>>>()?
             .try_into()
             .map_err(|e| anyhow!("error while converting card vector to array: {:?}", e))?;
-        let hand_type = HandType::from_cards(&cards)?;
+        let hand_type = HandType::from_cards(&cards);
 
         Ok(Self {
             bid,
@@ -172,9 +174,7 @@ fn main() -> Result<()> {
     hands.sort_by(|a, b| {
         let a_rank = a.hand_type.rank();
         let b_rank = b.hand_type.rank();
-        if a_rank != b_rank {
-            a_rank.cmp(&b_rank)
-        } else {
+        if a_rank == b_rank {
             for i in 0..a.cards.len() {
                 let a_card_rank = a.cards[i].rank();
                 let b_card_rank = b.cards[i].rank();
@@ -183,15 +183,17 @@ fn main() -> Result<()> {
                 }
             }
             a.bid.cmp(&b.bid)
+        } else {
+            a_rank.cmp(&b_rank)
         }
     });
 
-    let result: u32 = hands
+    let result = hands
         .iter()
         .enumerate()
-        .map(|(i, hand)| ((i + 1) as u32) * hand.bid)
-        .sum();
-    println!("{}", result);
+        .map(|(i, hand)| (i + 1) * hand.bid as usize)
+        .sum::<usize>();
+    println!("{result}");
 
     Ok(())
 }
