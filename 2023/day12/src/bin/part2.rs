@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+#![allow(clippy::bool_to_int_with_if)]
 
 use anyhow::Result;
 use hashbrown::HashMap;
@@ -18,7 +19,7 @@ impl Spring {
             '.' => Self::Operational,
             '#' => Self::Damaged,
             '?' => Self::Unknown,
-            _ => panic!("unexpected spring char: {}", s),
+            _ => panic!("unexpected spring char: {s}"),
         }
     }
 }
@@ -47,7 +48,7 @@ impl Row {
                 return *cached;
             }
 
-            if p.springs.len() == 0 {
+            if p.springs.is_empty() {
                 return if p.group_head_depth > 0 {
                     if p.group_sizes[0] == p.group_head_depth {
                         if p.group_sizes.len() > 1 {
@@ -58,12 +59,10 @@ impl Row {
                     } else {
                         0 // group is unfinished while at the end, so fail
                     }
+                } else if !p.group_sizes.is_empty() {
+                    0 // remaining groups with no remaining springs, so fail
                 } else {
-                    if p.group_sizes.len() > 0 {
-                        0 // remaining groups with no remaining springs, so fail
-                    } else {
-                        1 // success
-                    }
+                    1 // success
                 };
             }
 
@@ -98,21 +97,17 @@ impl Row {
 
             // If spring is damaged or unknown, add result assuming this spring is damaged.
             if p.springs[0] != Spring::Operational {
-                result += if p.group_sizes.len() > 0 {
-                    if p.group_sizes[0] == p.group_head_depth {
-                        0 // group finished while not ending, so fail
-                    } else {
-                        count_recursive(
-                            Params {
-                                springs: &p.springs[1..],
-                                group_sizes: p.group_sizes,
-                                group_head_depth: p.group_head_depth + 1,
-                            },
-                            cache,
-                        ) // continue with part of the group
-                    }
+                result += if p.group_sizes.is_empty() || p.group_sizes[0] == p.group_head_depth {
+                    0 // no groups expected anymore or group finished while not ending, so fail
                 } else {
-                    0 // no groups expected anymore
+                    count_recursive(
+                        Params {
+                            springs: &p.springs[1..],
+                            group_sizes: p.group_sizes,
+                            group_head_depth: p.group_head_depth + 1,
+                        },
+                        cache,
+                    ) // continue with part of the group
                 };
             }
 
@@ -137,7 +132,7 @@ fn main() -> Result<()> {
     let result = file
         .lines()
         .map(|line| {
-            let (springs_raw, group_sizes_raw) = line.split_once(" ").unwrap();
+            let (springs_raw, group_sizes_raw) = line.split_once(' ').unwrap();
             let springs: Vec<Spring> = iter::repeat(springs_raw)
                 .take(copies)
                 .collect_vec()
@@ -149,7 +144,7 @@ fn main() -> Result<()> {
                 .take(copies)
                 .collect_vec()
                 .join(",")
-                .split(",")
+                .split(',')
                 .map(|s| s.parse().unwrap())
                 .collect();
             Row {

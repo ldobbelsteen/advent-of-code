@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+#![allow(clippy::bool_to_int_with_if)]
 
 use anyhow::Result;
 use std::fs;
@@ -16,7 +17,7 @@ impl Spring {
             '.' => Self::Operational,
             '#' => Self::Damaged,
             '?' => Self::Unknown,
-            _ => panic!("unexpected spring char: {}", s),
+            _ => panic!("unexpected spring char: {s}"),
         }
     }
 }
@@ -30,10 +31,10 @@ struct Row {
 impl Row {
     fn count_arrangements(&self) -> u64 {
         fn count_rec(springs: &[Spring], group_sizes: &[u64], group_head_depth: u64) -> u64 {
-            assert!(group_sizes.len() > 0 || group_head_depth == 0);
-            assert!(group_sizes.len() == 0 || group_head_depth <= group_sizes[0]);
+            assert!(!group_sizes.is_empty() || group_head_depth == 0);
+            assert!(group_sizes.is_empty() || group_head_depth <= group_sizes[0]);
 
-            if springs.len() == 0 {
+            if springs.is_empty() {
                 return if group_head_depth > 0 {
                     if group_sizes[0] == group_head_depth {
                         // group is finished while at the end, so remove group
@@ -41,12 +42,10 @@ impl Row {
                     } else {
                         0 // group is unfinished while at the end, so fail
                     }
+                } else if !group_sizes.is_empty() {
+                    0 // remaining groups with no remaining springs, so fail
                 } else {
-                    if group_sizes.len() > 0 {
-                        0 // remaining groups with no remaining springs, so fail
-                    } else {
-                        1 // successfully reached the end
-                    }
+                    1 // successfully reached the end
                 };
             }
 
@@ -60,14 +59,10 @@ impl Row {
                 count_rec(&springs[1..], group_sizes, 0) // simply continue
             };
 
-            let damaged = if group_sizes.len() > 0 {
-                if group_sizes[0] == group_head_depth {
-                    0 // end of group is not here, so fail
-                } else {
-                    count_rec(&springs[1..], group_sizes, group_head_depth + 1) // take as part of current group
-                }
+            let damaged = if group_sizes.is_empty() || group_sizes[0] == group_head_depth {
+                0 // no groups expected anymore or end of group is not here, so fail
             } else {
-                0 // no groups expected anymore
+                count_rec(&springs[1..], group_sizes, group_head_depth + 1) // take as part of current group
             };
 
             match springs[0] {
@@ -85,10 +80,10 @@ fn main() -> Result<()> {
     let result = file
         .lines()
         .map(|line| {
-            let (springs_raw, group_sizes_raw) = line.split_once(" ").unwrap();
+            let (springs_raw, group_sizes_raw) = line.split_once(' ').unwrap();
             let springs: Vec<Spring> = springs_raw.chars().map(Spring::from_char).collect();
             let group_sizes: Vec<u64> = group_sizes_raw
-                .split(",")
+                .split(',')
                 .map(|s| s.parse().unwrap())
                 .collect();
             Row {
