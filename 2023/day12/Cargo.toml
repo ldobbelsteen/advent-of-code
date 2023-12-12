@@ -1,0 +1,9 @@
+[package]
+name="day12"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.75"
+hashbrown = "0.14.3"
+itertools = "0.12.0"
