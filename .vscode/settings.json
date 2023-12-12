@@ -1,7 +1,7 @@
 {
   "editor.formatOnSave": true,
   "[python]": {
-    "editor.defaultFormatter": "charliermarsh.ruff"
+    "editor.defaultFormatter": "ms-python.black-formatter"
   },
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
@@ -13,4 +13,8 @@
     "editor.defaultFormatter": "golang.go"
   },
   "rust-analyzer.check.command": "clippy",
+  "deno.enable": true,
+  "pylint.args": [
+    "--disable=C0114"
+  ],
 }

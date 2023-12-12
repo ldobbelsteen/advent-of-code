@@ -1,11 +1,13 @@
 from math import lcm
 
 
-def get_intervals(node: str, nodes: dict[str, tuple[str, str]], directions: list[bool]):
+def compute_intervals(
+    node: str, nodes: dict[str, tuple[str, str]], directions: list[bool]
+):
     """
-    Compute the intervals after which ..Z nodes appear when starting at some node with some directions.
-    The presence of a cycle is assumed. The index to which is jumped back and the cost of that jump are
-    returned alongside the intervals.
+    Compute the intervals after which ..Z nodes appear when starting at some node with some
+    directions. The presence of a cycle is assumed. The index to which is jumped back and the cost
+    of that jump are returned alongside the intervals.
     """
     z_steps: list[int] = []
     cycle_jump_index = None
@@ -50,54 +52,69 @@ def get_intervals(node: str, nodes: dict[str, tuple[str, str]], directions: list
     return intervals, cycle_jump_index, cycle_jump_interval
 
 
-with open("input.txt", "r") as file:
-    lines = file.readlines()
+def main() -> None:
+    """Day 8 part 2"""
+    with open("input.txt", "r", encoding="utf-8") as file:
+        lines = file.readlines()
 
-    # Get the directions in a list of going either left or right
-    directions = [
-        d == "L" for d in lines.pop(0).strip()
-    ]  # true is left, false is right
+        # Get the directions in a list of going either left or right
+        directions = [
+            d == "L" for d in lines.pop(0).strip()
+        ]  # true is left, false is right
 
-    # Get the nodes and put them in a dictionary
-    start_nodes = []
-    nodes: dict[str, tuple[str, str]] = {}
-    lines.pop(0)
-    for line in lines:
-        node, tup = line.strip().split(" = ")
-        left, right = tup.replace("(", "").replace(")", "").split(", ")
-        nodes[node] = (left, right)
-        if node[-1] == "A":
-            start_nodes.append(node)
+        # Get the nodes and put them in a dictionary
+        start_nodes = []
+        nodes: dict[str, tuple[str, str]] = {}
+        lines.pop(0)
+        for line in lines:
+            node, tup = line.strip().split(" = ")
+            left, right = tup.replace("(", "").replace(")", "").split(", ")
+            nodes[node] = (left, right)
+            if node[-1] == "A":
+                start_nodes.append(node)
 
-    # Keep track of the the number of steps and direction index for each starting node.
-    # Structure: [[steps_taken, interval_index, (intervals, cycle_jump_index, cycle_jump_interval)]]
-    states: list[tuple[int, int, tuple[list[int], int, int]]] = [
-        [0, 0, get_intervals(n, nodes, directions)] for n in start_nodes
-    ]
+        # Keep track of the the number of steps and direction index for each starting node.
+        steps_taken = [0 for _ in start_nodes]
+        interval_index = [0 for _ in start_nodes]
+        intervals = [compute_intervals(n, nodes, directions) for n in start_nodes]
 
-    # If all starting nodes have only one repeating ..Z and cycles without a tail, return LCM of periods.
-    if all(
-        [
-            len(intervals) == 1 and cycle_jump_index == 0
-            for _, _, (intervals, cycle_jump_index, _) in states
-        ]
-    ):
-        periods = [
-            sum(intervals[cycle_jump_index + 1 :]) + cycle_jump_interval
-            for _, _, (intervals, cycle_jump_index, cycle_jump_interval) in states
-        ]
-        print(lcm(*periods))
-    else:
-        # Else, bruteforce. Takes the state with the minimum currently taken steps and advances to the next ..Z
-        # until all the currently taken steps match. This case does not happen for the given input.txt...
-        while True:
-            if states[0][1] == len(states[0][2][0]):
-                states[0][0] += states[0][2][2]
-                states[0][1] = states[0][2][1]
-            else:
-                states[0][0] += states[0][2][0][states[0][1]]
-                states[0][1] += 1
-            states.sort(key=lambda s: s[0])
-            if all([state[0] == states[0][0] for state in states]):
-                break
-        print(states[0][0])
+        # If all starting nodes have only one repeating ..Z and cycles without a tail,
+        # return LCM of periods.
+        if all(
+            [
+                len(ints) == 1 and cycle_jump_index == 0
+                for (ints, cycle_jump_index, _) in intervals
+            ]
+        ):
+            periods = [
+                sum(ints[cycle_jump_index + 1 :]) + cycle_jump_interval
+                for (ints, cycle_jump_index, cycle_jump_interval) in intervals
+            ]
+            print(lcm(*periods))
+        else:
+            # Else, bruteforce. Takes the state with the minimum currently taken steps and advances
+            # to the next ..Z until all the currently taken steps match. This case does not happen
+            # for the given input.txt...
+            while True:
+                if interval_index[0] == len(intervals[0][0]):
+                    steps_taken[0] += intervals[0][2]
+                    interval_index[0] = intervals[0][1]
+                else:
+                    steps_taken[0] += intervals[0][0][interval_index[0]]
+                    interval_index[0] += 1
+                interval_index = [
+                    ii for _, ii in sorted(zip(steps_taken, interval_index))
+                ]  # sort by steps_taken
+                intervals = [
+                    ivs for _, ivs in sorted(zip(steps_taken, intervals))
+                ]  # sort by steps_taken
+                steps_taken.sort()
+                if all(
+                    [steps_taken[i] == steps_taken[0] for i in range(len(steps_taken))]
+                ):
+                    break
+            print(steps_taken[0])
+
+
+if __name__ == "__main__":
+    main()
