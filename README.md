@@ -2,7 +2,7 @@ My solutions to Advent of Code in various programming languages.
 
 ## Python
 
-Formatter: `black`, linter: `pylint`, typechecking: `mypy`
+Formatter/linter: `ruff`, typechecking: `pyright`
 
 ```
 python3 part1.py|part2.py
