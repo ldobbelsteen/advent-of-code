@@ -70,7 +70,7 @@ impl Instruction {
     }
 }
 
-fn compute_surface(border: &Vec<Coord>) -> isize {
+fn compute_surface(border: &[Coord]) -> isize {
     let first = border.first().unwrap();
     let last = border.last().unwrap();
     let mut result = 0;

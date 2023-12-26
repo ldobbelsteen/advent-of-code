@@ -318,7 +318,7 @@ impl Grid {
 
     /// Get the tiles enclosed by a cycle. Marks the bordering tiles on the inside
     /// and outside and flood-fills the desired enclosed space.
-    fn enclosed_by_cycle(&self, cycle: &Vec<Coord>) -> Result<HashSet<Coord>> {
+    fn enclosed_by_cycle(&self, cycle: &[Coord]) -> Result<HashSet<Coord>> {
         let cycle_coords: HashSet<Coord> = cycle.iter().cloned().collect();
         let mut left: HashSet<Coord> = HashSet::new();
         let mut right: HashSet<Coord> = HashSet::new();

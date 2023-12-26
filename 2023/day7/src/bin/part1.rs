@@ -133,7 +133,7 @@ impl HandType {
 struct Hand {
     bid: u32,
     cards: [Card; 5],
-    hand_type: HandType,
+    htype: HandType,
 }
 
 impl FromStr for Hand {
@@ -156,7 +156,7 @@ impl FromStr for Hand {
         Ok(Self {
             bid,
             cards,
-            hand_type,
+            htype: hand_type,
         })
     }
 }
@@ -169,8 +169,8 @@ fn main() -> Result<()> {
         .map(Hand::from_str)
         .collect::<Result<Vec<Hand>>>()?;
     hands.sort_by(|a, b| {
-        let a_rank = a.hand_type.rank();
-        let b_rank = b.hand_type.rank();
+        let a_rank = a.htype.rank();
+        let b_rank = b.htype.rank();
         if a_rank == b_rank {
             for i in 0..a.cards.len() {
                 let a_card_rank = a.cards[i].rank();

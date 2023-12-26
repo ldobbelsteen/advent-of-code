@@ -3,7 +3,7 @@
 use anyhow::Result;
 use std::fs;
 
-fn extrapolate_history(values: &Vec<i64>) -> Result<i64> {
+fn extrapolate_history(values: &[i64]) -> Result<i64> {
     if values.iter().all(|v| *v == 0) {
         return Ok(0);
     }
