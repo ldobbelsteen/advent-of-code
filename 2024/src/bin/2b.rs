@@ -42,17 +42,33 @@ impl Report {
 
         true
     }
+
+    fn is_safe_with_problem_dampener(&self) -> bool {
+        for i in 0..self.levels.len() {
+            let with_i_dampened = Report {
+                levels: [&self.levels[0..i], &self.levels[i + 1..]].concat(),
+            };
+            if with_i_dampened.is_safe() {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 fn main() -> Result<()> {
-    let file = std::fs::read_to_string("input.txt")?;
+    let file = std::fs::read_to_string("inputs/2-input.txt")?;
 
     let reports = file
         .lines()
         .map(Report::from_str)
         .collect::<Result<Vec<_>>>()?;
 
-    let result = reports.iter().filter(|r| r.is_safe()).count();
+    let result = reports
+        .iter()
+        .filter(|r| r.is_safe_with_problem_dampener())
+        .count();
 
     println!("result: {result}");
 

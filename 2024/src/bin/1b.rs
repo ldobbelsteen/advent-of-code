@@ -3,9 +3,9 @@
 use anyhow::{anyhow, Result};
 
 fn main() -> Result<()> {
-    let file = std::fs::read_to_string("input.txt")?;
+    let file = std::fs::read_to_string("inputs/1-input.txt")?;
 
-    let (mut left, mut right): (Vec<i32>, Vec<i32>) = file
+    let (left, right): (Vec<i32>, Vec<i32>) = file
         .lines()
         .map(|line| {
             let (a, b) = line
@@ -25,12 +25,18 @@ fn main() -> Result<()> {
         ));
     }
 
-    left.sort_unstable();
-    right.sort_unstable();
+    let right_occurrences = right
+        .iter()
+        .fold(std::collections::HashMap::new(), |mut acc, &x| {
+            *acc.entry(x).or_insert(0) += 1;
+            acc
+        });
 
     let mut result = 0;
-    for (a, b) in left.iter().zip(right.iter()) {
-        result += (a - b).abs();
+    for v in &left {
+        if let Some(&count) = right_occurrences.get(v) {
+            result += v * count;
+        }
     }
 
     println!("result: {result}");
