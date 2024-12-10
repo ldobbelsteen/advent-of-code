@@ -15,7 +15,7 @@ fn main() -> Result<()> {
         result += a * b;
     }
 
-    println!("Result: {result}");
+    println!("result: {result}");
 
     Ok(())
 }

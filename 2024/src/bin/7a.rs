@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("{result}");
+    println!("result: {result}");
 
     Ok(())
 }

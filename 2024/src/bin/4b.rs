@@ -147,7 +147,7 @@ fn main() -> Result<()> {
     let grid = Grid::from_str(&file)?;
 
     let result = grid.count_x_words(['M', 'A', 'S'])?;
-    println!("Result: {result}");
+    println!("result: {result}");
 
     Ok(())
 }

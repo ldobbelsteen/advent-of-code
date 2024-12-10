@@ -113,7 +113,7 @@ fn main() -> Result<()> {
     let grid = Grid::from_str(&file)?;
 
     let result = grid.count_word_occs("XMAS")?;
-    println!("Result: {result}");
+    println!("result: {result}");
 
     Ok(())
 }

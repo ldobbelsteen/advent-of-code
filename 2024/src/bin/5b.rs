@@ -73,7 +73,7 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("Result: {result}");
+    println!("result: {result}");
 
     Ok(())
 }
