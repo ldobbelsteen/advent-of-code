@@ -37,17 +37,17 @@ fn main() -> Result<()> {
         if instruction.clockwise {
             let distance_to_zero = dial_size - position;
             if instruction.count >= distance_to_zero {
-                result += if distance_to_zero > 0 { 1 } else { 0 };
+                result += i32::from(distance_to_zero > 0);
                 result += (instruction.count - distance_to_zero) / dial_size;
             }
         } else {
             let distance_to_zero = position;
             if instruction.count >= distance_to_zero {
-                result += if distance_to_zero > 0 { 1 } else { 0 };
+                result += i32::from(distance_to_zero > 0);
                 result += (instruction.count - distance_to_zero) / dial_size;
             }
         }
-        
+
         let count = instruction.count % dial_size;
         if instruction.clockwise {
             position += count;
@@ -61,6 +61,6 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("Result: {}", result);
+    println!("{result}");
     Ok(())
 }
