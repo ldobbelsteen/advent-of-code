@@ -16,15 +16,15 @@ fn surrounding_count(grid: &[Vec<bool>], i: usize, j: usize) -> Result<usize> {
 
     let mut count = 0;
     for (di, dj) in directions {
-        let ni = (i as isize) + di;
-        let nj = (j as isize) + dj;
+        let ni = (isize::try_from(i)?) + di;
+        let nj = (isize::try_from(j)?) + dj;
 
         if ni < 0 || nj < 0 {
             continue;
         }
 
-        if let Some(row) = grid.get(ni as usize) {
-            if let Some(&cell) = row.get(nj as usize) {
+        if let Some(row) = grid.get(usize::try_from(ni)?) {
+            if let Some(&cell) = row.get(usize::try_from(nj)?) {
                 if cell {
                     count += 1;
                 }
